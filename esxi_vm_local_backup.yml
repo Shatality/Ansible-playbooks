@@ -1,0 +1,27 @@
+# Резервное копирование VM внутри ESXi (проверено на ESXi 6.7)
+# Подразумевается использование на ESXi без vSphere (так как для vSphere есть модуль)
+---
+- name: ESXi VM Local Backup
+  hosts: dell
+  become: yes
+
+# Выключаем VM по id
+  tasks:
+  - name: Shutdown VM
+    raw: vim-cmd vmsvc/power.shutdown 4
+
+# Нужно сделать паузу перед самим бэкапом, так как файлы типа .vswp не успевают завершиться сразу после выключения VM
+  - name: Pause for 1 minute
+    ansible.builtin.pause:
+      minutes: 1
+
+# Производим backup в локальную директорию
+  - name: Local backup
+    ansible.builtin.copy:
+      src: /vmfs/volumes/datastore1/testserver
+      dest: /vmfs/volumes/datastore1/Backup
+      remote_src: yes
+
+# Включаем VM по id
+  - name: Power on VM
+    raw: vim-cmd vmsvc/power.on 4
